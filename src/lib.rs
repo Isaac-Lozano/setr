@@ -16,7 +16,7 @@ pub struct Rotation {
 }
 
 impl Rotation {
-    fn from_read<R, E>(readable: &mut R) -> io::Result<Rotation>
+    fn from_read<R, E>(mut readable: R) -> io::Result<Rotation>
         where R: Read,
               E: ByteOrder,
     {
@@ -50,7 +50,7 @@ pub struct Position {
 }
 
 impl Position {
-    fn from_read<R, E>(readable: &mut R) -> io::Result<Position>
+    fn from_read<R, E>(mut readable: R) -> io::Result<Position>
         where R: Read,
               E: ByteOrder,
     {
@@ -87,13 +87,13 @@ pub struct SetObject {
 }
 
 impl SetObject {
-    fn from_read<R, E>(readable: &mut R) -> io::Result<SetObject>
+    fn from_read<R, E>(mut readable: R) -> io::Result<SetObject>
         where R: Read,
               E: ByteOrder,
     {
         let object = Object(readable.read_u16::<E>()?);
-        let rotation = Rotation::from_read::<R, E>(readable)?;
-        let position = Position::from_read::<R, E>(readable)?;
+        let rotation = Rotation::from_read::<_, E>(&mut readable)?;
+        let position = Position::from_read::<_, E>(&mut readable)?;
         let attr1 = readable.read_f32::<E>()?;
         let attr2 = readable.read_f32::<E>()?;
         let attr3 = readable.read_f32::<E>()?;
@@ -126,7 +126,7 @@ impl SetObject {
 pub struct SetFile(pub Vec<SetObject>);
 
 impl SetFile {
-    pub fn from_read<P, R>(readable: &mut R) -> io::Result<SetFile>
+    pub fn from_read<P, R>(mut readable: R) -> io::Result<SetFile>
         where R: Read,
               P: Platform
     {
@@ -144,7 +144,7 @@ impl SetFile {
         let mut objects = Vec::new();
 
         for _ in 0..num_objects {
-            objects.push(SetObject::from_read::<_, P::Endianess>(readable)?);
+            objects.push(SetObject::from_read::<_, P::Endianess>(&mut readable)?);
         }
 
         Ok(SetFile(objects))
@@ -193,11 +193,4 @@ pub struct GameCube;
 
 impl Platform for GameCube {
     type Endianess = BigEndian;
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-    }
 }
